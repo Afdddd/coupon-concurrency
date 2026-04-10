@@ -19,7 +19,7 @@ POST /coupons/{couponId}/issue
 
 ## Phase
 
-### Phase 1 — 순진한 버전
+### Phase 1 
 - 가장 단순하게 구현
 - k6로 동시 1만 요청 → 초과 발급, 중복 발급 확인
 
