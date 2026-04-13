@@ -1,13 +1,15 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
+// 시나리오 2: 중복 발급 (1인 1매 race condition)
+// 쿠폰 10,000개 / 유저 100명 / 1인 10요청
 export const options = {
-    vus: 1000,          // 동시 가상 유저 1000명
-    iterations: 10000   // 총 1만 번 요청
+    vus: 100,
+    iterations: 1000,
 };
 
 export default function () {
-    const userId = __ITER * 1000 + __VU;
+    const userId = __VU;
     const couponId = 1;
     const res = http.post(`http://localhost:8080/coupon/${couponId}/issue?userId=${userId}`);
 
@@ -15,4 +17,3 @@ export default function () {
         '200 OK': (r) => r.status === 200,
     });
 }
-
