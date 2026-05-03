@@ -15,20 +15,14 @@ class CouponService(
 
     @Transactional
     fun issueCoupon(couponId: Long, userId: Long): String {
-        val coupon = getCoupon(couponId)
-
-        // 1. 쿠폰이 유효한지 => 남은 수가 있는지?
-        if (!coupon.isAvailable()) {
-            throw RuntimeException("남은 쿠폰이 없습니다.")
-        }
-
-        // 2. 사용자가 받았는지 검증
         if(couponIssueService.isAlreadyIssued(couponId, userId)) {
             throw RuntimeException("이미 수령한 쿠폰입니다.")
         }
 
-        // 3. 발급. => 차감
-        coupon.reduceCount()
+        val valid = couponRepository.decreaseCountIfAvailable(couponId)
+        if(valid == 0) throw RuntimeException("남은 쿠폰이 없거나 유효하지 않은 쿠폰입니다.")
+
+        val coupon = getCoupon(couponId)
         couponIssueService.save(coupon, userId)
         return coupon.code
     }
