@@ -2,6 +2,9 @@
 
 대량 동시 요청 환경에서 동시성 문제를 단계별로 분석하고 개선하는 프로젝트
 
+## 정리
+- [선착순 1,000장 쿠폰이 1,967장 발급된 이유](https://inyeop.notion.site/1-000-1-967-3550c52c121980d7937dfcd3f5e8b5c4)
+
 ## 기술 스택
 
 - Kotlin + Spring Boot
@@ -36,16 +39,7 @@ POST /coupons/{couponId}/issue
 - Schedule 관점 분석 (serial / nonserial / conflict serializable)
 - 격리 수준별 비교 (READ_COMMITTED → REPEATABLE_READ → SERIALIZABLE)
 - 비관적 락(2PL) / 낙관적 락
-- 유니크 제약조건, 인덱스 튜닝, 커넥션 풀 튜닝
 - 데드락 재현 / 해결
 - 각 단계마다 동일 조건 부하테스트 → TPS, 응답시간, 에러율 비교
 
 ### Phase 3~ — 확장
-
-## 기록 포맷
-
-각 단계마다 아래 형식으로 정리:
-
-```
-문제 → 원인 → 개선 → 수치(before/after)
-```
