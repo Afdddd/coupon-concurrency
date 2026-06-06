@@ -11,5 +11,5 @@ import jakarta.persistence.Table
 class User(
     @Id
     @GeneratedValue(GenerationType.IDENTITY)
-    val id: Long,
+    val id: Long? = null,
 )
