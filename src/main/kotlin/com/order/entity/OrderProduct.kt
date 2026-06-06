@@ -12,9 +12,10 @@ import jakarta.persistence.ManyToOne
 class OrderProduct(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
+    val id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     val order: Order,
     @ManyToOne(fetch = FetchType.LAZY)
-    val product: Product
+    val product: Product,
+    val quantity: Int = 0
 )

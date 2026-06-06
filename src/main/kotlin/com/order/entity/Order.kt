@@ -16,10 +16,23 @@ import jakarta.persistence.Table
 class Order(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long,
+    val id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
     val user: User,
-    val totalPrice: Int,
+    var totalPrice: Int = 0,
     @Enumerated(EnumType.STRING)
-    val orderStatus: OrderStatus,
-)
+    var orderStatus: OrderStatus,
+) {
+    fun paid() {
+        this.orderStatus = OrderStatus.PAID
+    }
+    fun ready() {
+        this.orderStatus = OrderStatus.READY
+    }
+    fun canceled() {
+        this.orderStatus = OrderStatus.CANCELED
+    }
+    fun updateTotalPrice(totalPrice: Int) {
+        this.totalPrice = totalPrice
+    }
+}
