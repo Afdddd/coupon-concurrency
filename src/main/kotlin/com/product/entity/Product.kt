@@ -1,5 +1,6 @@
 package com.product.entity
 
+import com.global.exception.OutOfStockException
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -14,17 +15,14 @@ class Product(
     val price: Int,
     var stock: Int,
 ) {
-    private fun isAvailable(stock: Int): Boolean {
-        if(this.stock - stock < 0)
-            throw Exception("Product is out of stock")
-        return true
+    private fun validateStock(stock: Int) {
+        if(this.stock - stock < 0) {
+            throw OutOfStockException()
+        }
     }
 
     fun reduceStock(stock: Int) {
-        if(this.isAvailable(stock)) {
-            this.stock -= stock
-        } else {
-            throw Exception("Product is out of stock")
-        }
+        validateStock(stock)
+        this.stock -= stock
     }
 }
