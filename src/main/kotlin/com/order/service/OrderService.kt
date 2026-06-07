@@ -38,7 +38,7 @@ class OrderService(
         )
 
         orderRequest.items.forEach { item ->
-            val product = productRepository.findByIdOrNull(item.productId)
+            val product = productRepository.findByIdForUpdate(item.productId)
                 ?: throw EntityNotFoundException("Product not found")
             product.reduceStock(item.quantity)
             totalPrice += product.price * item.quantity
