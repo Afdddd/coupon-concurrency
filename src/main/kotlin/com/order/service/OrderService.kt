@@ -6,7 +6,6 @@ import com.order.entity.OrderProduct
 import com.order.entity.OrderStatus
 import com.order.repository.OrderProductRepository
 import com.order.repository.OrderRepository
-import com.payment.PaymentClient
 import com.product.repository.ProductRepository
 import com.user.repository.UserRepository
 import jakarta.persistence.EntityNotFoundException
@@ -19,8 +18,7 @@ class OrderService(
     val orderRepository: OrderRepository,
     val userRepository: UserRepository,
     val productRepository: ProductRepository,
-    val orderProductRepository: OrderProductRepository,
-    val paymentClient: PaymentClient
+    val orderProductRepository: OrderProductRepository
 ) {
 
     @Transactional
@@ -30,12 +28,7 @@ class OrderService(
         val user = userRepository.findByIdOrNull(userId)
             ?: throw EntityNotFoundException("User not found")
 
-        val order = orderRepository.save(
-            Order(
-                user = user,
-                orderStatus = OrderStatus.READY
-            )
-        )
+        val order = orderRepository.save(Order(user = user, orderStatus = OrderStatus.READY))
 
         orderRequest.items.forEach { item ->
             val product = productRepository.findByIdForUpdate(item.productId)
@@ -48,12 +41,24 @@ class OrderService(
 
         order.updateTotalPrice(totalPrice)
 
-        if(paymentClient.pay(order)) {
-            order.paid()
-        } else {
-            throw Exception("Payment failed")
-        }
-
         return order.id!!
     }
+
+
+
+    @Transactional
+    fun orderPaid(orderId: Long) {
+        val order = orderRepository.findByIdOrNull(orderId)
+            ?: throw EntityNotFoundException("Order not found")
+        order.paid()
+    }
+
+    @Transactional
+    fun orderFailed(orderId: Long) {
+        val order = orderRepository.findByIdOrNull(orderId)
+            ?: throw EntityNotFoundException("Order not found")
+        order.failed()
+    }
+
+
 }

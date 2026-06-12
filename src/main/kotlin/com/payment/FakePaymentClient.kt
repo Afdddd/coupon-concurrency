@@ -1,11 +1,20 @@
 package com.payment
 
-import com.order.entity.Order
 import org.springframework.stereotype.Component
 
 @Component
-class FakePaymentClient: PaymentClient {
-    override fun pay(order: Order): Boolean {
-        return true
+class FakePaymentClient(
+    success: Boolean = false
+) : PaymentClient {
+
+    var isPaymentSuccessful: Boolean = success
+
+    override fun pay(orderId: Long): Boolean {
+        try {
+            Thread.sleep(1000)
+            return isPaymentSuccessful
+        } catch (e: Exception) {
+            return isPaymentSuccessful
+        }
     }
 }

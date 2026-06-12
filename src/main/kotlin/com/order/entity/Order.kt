@@ -32,6 +32,9 @@ class Order(
     fun canceled() {
         this.orderStatus = OrderStatus.CANCELED
     }
+    fun failed() {
+        this.orderStatus = OrderStatus.FAILED
+    }
     fun updateTotalPrice(totalPrice: Int) {
         this.totalPrice = totalPrice
     }

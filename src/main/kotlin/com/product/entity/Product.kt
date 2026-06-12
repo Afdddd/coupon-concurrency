@@ -25,4 +25,8 @@ class Product(
         validateStock(stock)
         this.stock -= stock
     }
+
+    fun addStock(stock: Int) {
+        this.stock += stock
+    }
 }

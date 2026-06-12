@@ -7,6 +7,8 @@ import com.order.dto.OrderItemRequest
 import com.order.entity.OrderStatus
 import com.order.repository.OrderProductRepository
 import com.order.repository.OrderRepository
+import com.payment.FakePaymentClient
+import com.payment.PaymentClient
 import com.product.entity.Product
 import com.product.repository.ProductRepository
 import com.user.entity.User
@@ -25,11 +27,12 @@ import kotlin.test.Test
 @Transactional
 class OrderServiceIntegrationTest() {
 
-    @Autowired lateinit var orderService: OrderService
+    @Autowired lateinit var orderService: OrderIntegrationService
     @Autowired lateinit var productRepository: ProductRepository
     @Autowired lateinit var userRepository: UserRepository
     @Autowired lateinit var orderRepository: OrderRepository
     @Autowired lateinit var orderProductRepository: OrderProductRepository
+    @Autowired lateinit var paymentClient: PaymentClient
     @Autowired lateinit var em: EntityManager
 
     lateinit var testProduct1: Product
@@ -48,6 +51,7 @@ class OrderServiceIntegrationTest() {
     fun `주문 생성시 재고가 차감되고 결제완료 상태가 된다`() {
 
         // given
+        (paymentClient as FakePaymentClient).isPaymentSuccessful = true
         val request = OrderCreateRequest(
             listOf(
                 OrderItemRequest(testProduct1.id!!, 2),
@@ -56,7 +60,7 @@ class OrderServiceIntegrationTest() {
         )
 
         // when
-        val orderId = orderService.createOrder(testUser.id!!, request)
+        val orderId = orderService.order(testUser.id!!, request)
 
         // then
         em.flush()
@@ -86,7 +90,7 @@ class OrderServiceIntegrationTest() {
 
         // when & then
         assertThrows(OutOfStockException::class.java) {
-            orderService.createOrder(testUser.id!!, request)
+            orderService.order(testUser.id!!, request)
         }
     }
 }
