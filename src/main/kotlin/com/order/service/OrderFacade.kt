@@ -5,23 +5,20 @@ import com.payment.PaymentClient
 import org.springframework.stereotype.Service
 
 @Service
-class OrderIntegrationService(
+class OrderFacade(
     val orderService: OrderService,
     val paymentClient: PaymentClient,
-    val orderProductService: OrderProductService
 ) {
 
-    fun order(userId: Long, orderRequest: OrderCreateRequest): Long {
+    fun processOrder(userId: Long, orderRequest: OrderCreateRequest): Long {
 
         val orderId = orderService.createOrder(userId, orderRequest)
 
         if(paymentClient.pay(orderId)) {
-            orderService.orderPaid(orderId)
+            orderService.completeAsPaid(orderId)
         } else {
-            orderService.orderFailed(orderId)
-            orderProductService.orderRollback(orderId)
+            orderService.cancelOrderAndRollbackStock(orderId)
         }
-
         return orderId
     }
 }
