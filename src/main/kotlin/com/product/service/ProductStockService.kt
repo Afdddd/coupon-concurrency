@@ -22,9 +22,11 @@ class ProductStockService(
             val product = productRepository.findByIdForUpdate(item.productId)
                 ?: throw EntityNotFoundException("Product not found")
             product.reduceStock(item.quantity)
-            totalPrice += product.price * item.quantity
 
-            orderProductRepository.save(OrderProduct(order = order, product = product, quantity = item.quantity))
+            val orderProduct = OrderProduct(order = order, product = product, quantity = item.quantity)
+            totalPrice += orderProduct.totalPrice()
+
+            orderProductRepository.save(orderProduct)
         }
         return totalPrice
     }
