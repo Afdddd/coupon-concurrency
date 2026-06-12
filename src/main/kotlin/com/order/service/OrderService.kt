@@ -7,6 +7,7 @@ import com.order.entity.OrderStatus
 import com.order.repository.OrderProductRepository
 import com.order.repository.OrderRepository
 import com.product.repository.ProductRepository
+import com.product.service.ProductStockService
 import com.user.repository.UserRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.repository.findByIdOrNull
@@ -15,50 +16,39 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class OrderService(
+    val productStockService: ProductStockService,
     val orderRepository: OrderRepository,
     val userRepository: UserRepository,
-    val productRepository: ProductRepository,
-    val orderProductRepository: OrderProductRepository
 ) {
 
     @Transactional
     fun createOrder(userId: Long, orderRequest: OrderCreateRequest): Long {
-        var totalPrice = 0
-
         val user = userRepository.findByIdOrNull(userId)
             ?: throw EntityNotFoundException("User not found")
 
         val order = orderRepository.save(Order(user = user, orderStatus = OrderStatus.READY))
-
-        orderRequest.items.forEach { item ->
-            val product = productRepository.findByIdForUpdate(item.productId)
-                ?: throw EntityNotFoundException("Product not found")
-            product.reduceStock(item.quantity)
-            totalPrice += product.price * item.quantity
-
-            orderProductRepository.save(OrderProduct(order = order, product = product, quantity = item.quantity))
-        }
-
-        order.updateTotalPrice(totalPrice)
-
+        val calculatedAmount = productStockService.reserveStock(order, orderRequest.items)
+        order.updateTotalPrice(calculatedAmount)
         return order.id!!
     }
 
-
-
     @Transactional
-    fun orderPaid(orderId: Long) {
+    fun completeAsPaid(orderId: Long) {
         val order = orderRepository.findByIdOrNull(orderId)
             ?: throw EntityNotFoundException("Order not found")
         order.paid()
     }
 
     @Transactional
-    fun orderFailed(orderId: Long) {
+    fun cancelOrderAndRollbackStock(orderId: Long) {
+        productStockService.rollbackStock(orderId)
+        completeAsFailed(orderId)
+    }
+
+    private fun completeAsFailed(orderId: Long) {
         val order = orderRepository.findByIdOrNull(orderId)
             ?: throw EntityNotFoundException("Order not found")
         order.failed()
     }
-
 
 }

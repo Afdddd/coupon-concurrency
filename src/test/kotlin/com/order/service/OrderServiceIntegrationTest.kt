@@ -27,7 +27,7 @@ import kotlin.test.Test
 @Transactional
 class OrderServiceIntegrationTest() {
 
-    @Autowired lateinit var orderService: OrderIntegrationService
+    @Autowired lateinit var orderService: OrderFacade
     @Autowired lateinit var productRepository: ProductRepository
     @Autowired lateinit var userRepository: UserRepository
     @Autowired lateinit var orderRepository: OrderRepository
@@ -60,7 +60,7 @@ class OrderServiceIntegrationTest() {
         )
 
         // when
-        val orderId = orderService.order(testUser.id!!, request)
+        val orderId = orderService.processOrder(testUser.id!!, request)
 
         // then
         em.flush()
@@ -90,7 +90,7 @@ class OrderServiceIntegrationTest() {
 
         // when & then
         assertThrows(OutOfStockException::class.java) {
-            orderService.order(testUser.id!!, request)
+            orderService.processOrder(testUser.id!!, request)
         }
     }
 }

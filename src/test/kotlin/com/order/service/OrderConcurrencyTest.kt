@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 @Import(TestcontainersConfiguration::class)
 class OrderConcurrencyTest {
 
-    @Autowired lateinit var orderService: OrderIntegrationService
+    @Autowired lateinit var orderService: OrderFacade
     @Autowired lateinit var productRepository: ProductRepository
     @Autowired lateinit var userRepository: UserRepository
     @Autowired lateinit var paymentClient: PaymentClient
@@ -49,7 +49,7 @@ class OrderConcurrencyTest {
             executor.submit {
                 try {
                     readLatch.await()
-                    orderService.order(userId, OrderCreateRequest(listOf(OrderItemRequest(productId, 1))))
+                    orderService.processOrder(userId, OrderCreateRequest(listOf(OrderItemRequest(productId, 1))))
                 } catch (e: Exception) {
                     e.printStackTrace()
                 } finally {
