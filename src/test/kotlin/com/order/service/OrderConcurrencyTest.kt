@@ -3,6 +3,8 @@ package com.order.service
 import com.conf.TestcontainersConfiguration
 import com.order.dto.OrderCreateRequest
 import com.order.dto.OrderItemRequest
+import com.payment.FakePaymentClient
+import com.payment.PaymentClient
 import com.product.entity.Product
 import com.product.repository.ProductRepository
 import com.user.entity.User
@@ -20,9 +22,10 @@ import kotlin.test.assertEquals
 @Import(TestcontainersConfiguration::class)
 class OrderConcurrencyTest {
 
-    @Autowired lateinit var orderService: OrderService
+    @Autowired lateinit var orderService: OrderIntegrationService
     @Autowired lateinit var productRepository: ProductRepository
     @Autowired lateinit var userRepository: UserRepository
+    @Autowired lateinit var paymentClient: PaymentClient
     var userId: Long = 0
     var productId: Long = 0
 
@@ -35,6 +38,7 @@ class OrderConcurrencyTest {
     @Test
     fun `동시에 100개 주문하면 재고가 0이다`() {
         // given
+        (paymentClient as FakePaymentClient).isPaymentSuccessful = true
         val threadCount = 100
         val executor = Executors.newFixedThreadPool(threadCount)
         val readLatch = CountDownLatch(1)
@@ -45,7 +49,7 @@ class OrderConcurrencyTest {
             executor.submit {
                 try {
                     readLatch.await()
-                    orderService.createOrder(userId, OrderCreateRequest(listOf(OrderItemRequest(productId, 1))))
+                    orderService.order(userId, OrderCreateRequest(listOf(OrderItemRequest(productId, 1))))
                 } catch (e: Exception) {
                     e.printStackTrace()
                 } finally {
