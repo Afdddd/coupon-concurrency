@@ -93,4 +93,33 @@ class OrderServiceIntegrationTest() {
             orderService.processOrder(testUser.id!!, request)
         }
     }
+
+    @Test
+    fun `결제 실패 시 보상 프로세스가 적용된다`() {
+        // given
+        (paymentClient as FakePaymentClient).isPaymentSuccessful = false
+        val request = OrderCreateRequest(
+            listOf(
+                OrderItemRequest(testProduct1.id!!, 2),
+                OrderItemRequest(testProduct2.id!!, 1)
+            )
+        )
+
+        // when
+        val orderId = orderService.processOrder(testUser.id!!, request)
+
+        em.flush()
+        em.clear()
+
+        val order = orderRepository.findById(orderId).get()
+        val orderProducts = orderProductRepository.findByOrderId(orderId)
+        val product1 = orderProducts[0].product
+        val product2 = orderProducts[1].product
+
+        // then
+        assertEquals(OrderStatus.FAILED, order.orderStatus)
+        assertEquals(10, product1.stock)
+        assertEquals(10, product2.stock)
+
+    }
 }
