@@ -18,4 +18,6 @@ class OrderProduct(
     @ManyToOne(fetch = FetchType.LAZY)
     val product: Product,
     val quantity: Int = 0
-)
+) {
+    fun totalPrice(): Int = product.price * quantity
+}
