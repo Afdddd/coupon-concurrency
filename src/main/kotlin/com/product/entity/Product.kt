@@ -15,18 +15,20 @@ class Product(
     val price: Int,
     var stock: Int,
 ) {
-    private fun validateStock(stock: Int) {
+    fun reduceStock(stock: Int) {
+        validateRequestStock(stock)
         if(this.stock - stock < 0) {
             throw OutOfStockException()
         }
-    }
-
-    fun reduceStock(stock: Int) {
-        validateStock(stock)
         this.stock -= stock
     }
 
     fun addStock(stock: Int) {
+        validateRequestStock(stock)
         this.stock += stock
+    }
+
+    private fun validateRequestStock(stock: Int) {
+        require(stock > 0) {"재고 요청은 0보다 커야 합니다. $stock"}
     }
 }
