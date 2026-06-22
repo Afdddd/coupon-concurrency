@@ -13,10 +13,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
+import org.springframework.dao.CannotAcquireLockException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @Import(TestcontainersConfiguration::class)
@@ -27,12 +30,15 @@ class OrderConcurrencyTest {
     @Autowired lateinit var userRepository: UserRepository
     @Autowired lateinit var paymentClient: PaymentClient
     var userId: Long = 0
-    var productId: Long = 0
+    var productId1: Long = 0
+    var productId2: Long = 0
+
 
     @BeforeEach
     fun setUp() {
         userId = userRepository.save(User()).id!!
-        productId = productRepository.save(Product(name = "mac-mini", price = 100, stock = 100)).id!!
+        productId1 = productRepository.save(Product(name = "mac-mini", price = 100, stock = 100)).id!!
+        productId2 = productRepository.save(Product(name = "mac-book", price = 120, stock = 100)).id!!
     }
 
     @Test
@@ -49,7 +55,7 @@ class OrderConcurrencyTest {
             executor.submit {
                 try {
                     readLatch.await()
-                    orderService.processOrder(userId, OrderCreateRequest(listOf(OrderItemRequest(productId, 1))))
+                    orderService.processOrder(userId, OrderCreateRequest(listOf(OrderItemRequest(productId1, 1))))
                 } catch (e: Exception) {
                     e.printStackTrace()
                 } finally {
@@ -61,10 +67,56 @@ class OrderConcurrencyTest {
         doneLatch.await()
 
         // then
-        val product = productRepository.findById(productId).get()
+        val product = productRepository.findById(productId1).get()
 
         assertEquals(0, product.stock)
     }
 
+    @Test
+    fun `락 순서가 엇갈리면 데드락 발생`() {
+        // given
+        (paymentClient as FakePaymentClient).isPaymentSuccessful = true
+        val threadCount = 100
+        val executor = Executors.newFixedThreadPool(threadCount)
+        val readLatch = CountDownLatch(1)
+        val doneLatch = CountDownLatch(threadCount)
+        val count = AtomicInteger(0)
+
+        val forwardOrder = listOf(OrderItemRequest(productId1, 1), OrderItemRequest(productId2, 1)) // 상품1 → 상품2
+        val reverseOrder = listOf(OrderItemRequest(productId2, 1), OrderItemRequest(productId1, 1)) // 상품2 → 상품1
+
+        // when
+        repeat(threadCount / 2) {
+            executor.submit {
+                try {
+                    readLatch.await()
+                    orderService.processOrder(userId, OrderCreateRequest(forwardOrder))
+                } catch (e: CannotAcquireLockException) {
+                    count.incrementAndGet()
+                } finally {
+                    doneLatch.countDown()
+                }
+            }
+        }
+
+        repeat(threadCount / 2) {
+            executor.submit {
+                try {
+                    readLatch.await()
+                    orderService.processOrder(userId, OrderCreateRequest(reverseOrder))
+                } catch (e: CannotAcquireLockException) {
+                    count.incrementAndGet()
+                } finally {
+                    doneLatch.countDown()
+                }
+            }
+        }
+        readLatch.countDown()
+        doneLatch.await()
+        executor.shutdown()
+
+        // then
+        assertTrue(count.get() > 0, "데드락이 발생하지 않음. count=${count.get()}")
+    }
 
 }
