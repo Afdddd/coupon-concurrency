@@ -18,7 +18,7 @@ class ProductStockService(
     @Transactional
     fun reserveStock(order: Order, items: List<OrderItemRequest>): Int {
         var totalPrice = 0
-        items.forEach { item ->
+        items.sortedBy { it.productId }.forEach { item ->
             val product = productRepository.findByIdForUpdate(item.productId)
                 ?: throw EntityNotFoundException("Product not found")
             product.reduceStock(item.quantity)
@@ -33,7 +33,7 @@ class ProductStockService(
 
     @Transactional
     fun rollbackStock(orderId: Long) {
-        orderProductRepository.findByOrderId(orderId).forEach { orderProduct ->
+        orderProductRepository.findByOrderId(orderId).sortedBy { it.product.id }.forEach { orderProduct ->
             val product = productRepository.findByIdForUpdate(orderProduct.product.id!!)
                 ?: throw IllegalStateException("Product not found")
             product.addStock(orderProduct.quantity)

@@ -19,7 +19,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 @SpringBootTest
 @Import(TestcontainersConfiguration::class)
@@ -73,7 +72,7 @@ class OrderConcurrencyTest {
     }
 
     @Test
-    fun `락 순서가 엇갈리면 데드락 발생`() {
+    fun `상품 id를 정렬하면 데드락이 발생하지 않는다`() {
         // given
         (paymentClient as FakePaymentClient).isPaymentSuccessful = true
         val threadCount = 100
@@ -91,7 +90,7 @@ class OrderConcurrencyTest {
                 try {
                     readLatch.await()
                     orderService.processOrder(userId, OrderCreateRequest(forwardOrder))
-                } catch (e: CannotAcquireLockException) {
+                } catch (_: CannotAcquireLockException) {
                     count.incrementAndGet()
                 } finally {
                     doneLatch.countDown()
@@ -104,7 +103,7 @@ class OrderConcurrencyTest {
                 try {
                     readLatch.await()
                     orderService.processOrder(userId, OrderCreateRequest(reverseOrder))
-                } catch (e: CannotAcquireLockException) {
+                } catch (_: CannotAcquireLockException) {
                     count.incrementAndGet()
                 } finally {
                     doneLatch.countDown()
@@ -116,7 +115,7 @@ class OrderConcurrencyTest {
         executor.shutdown()
 
         // then
-        assertTrue(count.get() > 0, "데드락이 발생하지 않음. count=${count.get()}")
+        assertEquals(0, count.get())
     }
 
 }
